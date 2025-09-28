@@ -1,0 +1,10 @@
+{
+    "description": "Configuration for initializing the auxiliary (sarcasm/emotion) model.",
+    "seed": 42,
+    "output_path": "/content/drive/MyDrive/MultimodelHateSpeechDetection/models/aux_model.pth",
+    "model": {
+        "num_emotions": 10,
+        "emotion_embedding_dim": 32,
+        "output_dim": 64
+    }
+}
