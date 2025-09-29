@@ -1,6 +1,6 @@
 import torch
 from torch.optim import AdamW
-from torch.optim.lr_scheduler import get_linear_schedule_with_warmup
+from transformers import get_linear_schedule_with_warmup
 from torch.utils.data import DataLoader
 from torch.cuda.amp import GradScaler, autocast
 import pandas as pd
