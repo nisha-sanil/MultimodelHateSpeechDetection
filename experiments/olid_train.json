@@ -5,6 +5,7 @@
     "train_csv": "olid-training-v1.0.tsv",
     "csv_separator": "\t",
     "label_column": "subtask_a",
+    "text_column": "tweet",
     "output_dir": "/content/drive/MyDrive/MultimodelHateSpeechDetection/models/text_olid_finetuned",
     "training": {
         "batch_size": 32,

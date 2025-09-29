@@ -169,9 +169,13 @@ def main(args):
         if epoch in unfreeze_schedule:
             num_layers = unfreeze_schedule[epoch]
             set_trainable_layers(text_encoder, num_layers)
-            # Add newly unfrozen parameters to the optimizer
-            optimizer.add_param_group({'params': filter(lambda p: p.requires_grad, text_encoder.parameters()), 'lr': exp_config['training']['lr_backbone']})
-            logging.info(f"Optimizer updated with newly trainable layers.")
+            # Re-initialize optimizer to include newly unfrozen parameters
+            optimizer = AdamW([
+                {'params': filter(lambda p: p.requires_grad, text_encoder.parameters()), 'lr': exp_config['training']['lr_backbone']},
+                {'params': classifier_head.parameters(), 'lr': exp_config['training']['lr_head']}
+            ], weight_decay=exp_config['training']['weight_decay'])
+            scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=exp_config['training'].get('warmup_steps', 0), num_training_steps=total_steps)
+            logging.info(f"Optimizer and scheduler re-initialized for newly unfrozen layers.")
 
         train_loss = train_one_epoch(text_encoder, classifier_head, train_dataloader, optimizer, scheduler, criterion, scaler, device)
         val_loss, val_f1, val_acc = evaluate_one_epoch(text_encoder, classifier_head, val_dataloader, criterion, device)
@@ -184,7 +188,7 @@ def main(args):
             logging.info(f"New best validation F1: {best_val_f1:.4f}. Saving model...")
             text_encoder.model.save_pretrained(output_dir)
             torch.save(classifier_head.state_dict(), output_dir / "classifier_head.pth")
-            dataset.tokenizer.save_pretrained(output_dir)
+            train_dataset.tokenizer.save_pretrained(output_dir)
 
     # --- Save Model ---
     logging.info(f"Training complete. Best model saved to {output_dir} with F1 score: {best_val_f1:.4f}")
