@@ -1,0 +1,21 @@
+{
+    "description": "Configuration for pre-training the DeBERTa model on the OLID dataset.",
+    "seed": 42,
+    "data_path": "/content/drive/MyDrive/MyDatasets",
+    "train_csv": "olid-training-v1.0.tsv",
+    "csv_separator": "\t",
+    "label_column": "subtask_a",
+    "output_dir": "/content/drive/MyDrive/MultimodelHateSpeechDetection/models/text_olid_finetuned",
+    "training": {
+        "batch_size": 32,
+        "epochs": 3,
+        "lr_backbone": 3e-5,
+        "lr_head": 1e-4,
+        "weight_decay": 0.01,
+        "use_amp": true,
+        "unfreeze_schedule": {
+            "0": 2,
+            "1": null
+        }
+    }
+}

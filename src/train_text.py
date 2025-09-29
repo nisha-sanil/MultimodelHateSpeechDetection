@@ -1,6 +1,6 @@
 import torch
 from torch.optim import AdamW
-from transformers import get_linear_schedule_with_warmup
+from torch.optim.lr_scheduler import get_linear_schedule_with_warmup
 from torch.utils.data import DataLoader
 from torch.cuda.amp import GradScaler, autocast
 import pandas as pd
@@ -112,11 +112,18 @@ def main(args):
     device = utils.get_device()
 
     # --- Data ---
-    full_df = pd.read_csv(Path(exp_config['data_path']) / exp_config['train_csv'])
+    separator = exp_config.get("csv_separator", ",") # Default to comma
+    full_df = pd.read_csv(Path(exp_config['data_path']) / exp_config['train_csv'], sep=separator)
     # Filter for samples that have text
     df = full_df[full_df['text'].notna()].reset_index(drop=True)
 
-    train_df, val_df = train_test_split(df, test_size=exp_config.get('val_split', 0.1), random_state=exp_config.get('seed', config.SEED), stratify=df['label'])
+    label_column = exp_config.get("label_column", "label")
+    # For OLID, we need to map labels to 0 and 1
+    if 'subtask_a' in df.columns and label_column == 'subtask_a':
+        df['label'] = df['subtask_a'].apply(lambda x: 1 if x == 'OFF' else 0)
+        label_column = 'label' # Use the new 'label' column for stratification
+
+    train_df, val_df = train_test_split(df, test_size=exp_config.get('val_split', 0.1), random_state=exp_config.get('seed', config.SEED), stratify=df[label_column])
 
     train_dataset = MultimodalHateSpeechDataset(train_df, Path(exp_config['data_path']), config.FEATURES_DIR, mode='train', use_precomputed=False)
     val_dataset = MultimodalHateSpeechDataset(val_df, Path(exp_config['data_path']), config.FEATURES_DIR, mode='val', use_precomputed=False)
@@ -125,7 +132,11 @@ def main(args):
 
     # --- Model ---
     # We train the text encoder with a simple linear head for this task
-    text_encoder = TextEncoder(trainable=False).to(device) # Start with all layers frozen
+    # If a pre-trained local path is specified (e.g., from OLID training), load it.
+    local_model_path = exp_config.get("local_model_path")
+    text_encoder = TextEncoder(trainable=False, from_local_path=local_model_path).to(device) # Start with all layers frozen
+    if local_model_path:
+        logging.info(f"Loaded text model from local path: {local_model_path}")
     classifier_head = torch.nn.Linear(text_encoder.embedding_dim, 1).to(device)
 
     # --- Training Setup ---
