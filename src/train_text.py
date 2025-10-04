@@ -134,7 +134,7 @@ def main(args):
     # We train the text encoder with a simple linear head for this task
     # If a pre-trained local path is specified (e.g., from OLID training), load it.
     local_model_path = exp_config.get("local_model_path")
-    text_encoder = TextEncoder(trainable=False, from_local_path=local_model_path).to(device) # Start with all layers frozen
+    text_encoder = TextEncoder(trainable=False, from_local_path=local_model_path, use_pretrained=False).to(device) # Start with all layers frozen
     if local_model_path:
         logging.info(f"Loaded text model from local path: {local_model_path}")
     classifier_head = torch.nn.Linear(text_encoder.embedding_dim, 1).to(device)

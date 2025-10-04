@@ -8,7 +8,7 @@ class TextEncoder(nn.Module):
     """
     A wrapper for Hugging Face text models (e.g., DeBERTa) to extract embeddings.
     """
-    def __init__(self, model_name=None, trainable=False, from_local_path=None):
+    def __init__(self, model_name=None, trainable=False, from_local_path=None, use_pretrained=True):
         """
         Args:
             model_name (str, optional): The name of the Hugging Face model. 
@@ -16,6 +16,7 @@ class TextEncoder(nn.Module):
             trainable (bool): Whether the backbone weights are trainable.
             from_local_path (str, optional): Path to a locally saved model to load from.
         """
+
         super().__init__()
         model_path = from_local_path or model_name or config.MODEL_CONFIG['text']['model_name']
         
@@ -23,7 +24,7 @@ class TextEncoder(nn.Module):
         hf_config = AutoConfig.from_pretrained(model_path)
         self.embedding_dim = hf_config.hidden_size
 
-        self.model = AutoModel.from_pretrained(model_path)
+        self.model = AutoModel.from_config(hf_config) # Initialize from config for training from scratch
 
         for param in self.model.parameters():
             param.requires_grad = trainable
